@@ -9,6 +9,7 @@
     "dev": "vite dev --port 3000",
     "generate-routes": "vite build",
     "build": "vite build",
+    "build:netlify": "NITRO_PRESET=netlify vite build",
     "preview": "vite preview"
   },
   "dependencies": {
