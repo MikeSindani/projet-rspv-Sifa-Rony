@@ -6,6 +6,7 @@ import {
   WeddingRingsIcon,
   ChurchIcon,
   WeddingCakeIcon,
+  TownHallIcon,
 } from '../components/WeddingIcons'
 import {
   Heart,
@@ -17,110 +18,72 @@ import {
   Check,
   MessageSquare,
   Sparkles,
-  Volume2,
-  VolumeX,
+  Pause,
+  Play,
+  Sparkle,
 } from 'lucide-react'
 import { FloatingPetals } from '../components/FloatingPetals'
 
 export const Route = createFileRoute('/')({ component: WeddingApp })
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   AUDIO ENGINE  (piano doux, démarré par le geste utilisateur)
-   ═══════════════════════════════════════════════════════════════════════════ */
-function useAmbiance() {
-  const ctxRef = useRef<AudioContext | null>(null)
-  const playingRef = useRef(false)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [playing, setPlaying] = useState(false)
-
-  /* Accords romantiques Canon-in-D / valse */
-  const CHORDS = [
-    [261.63, 329.63, 392.0, 523.25],   // C maj
-    [220.0,  277.18, 329.63, 440.0],   // A min
-    [174.61, 220.0,  261.63, 349.23],  // F maj
-    [196.0,  246.94, 293.66, 392.0],   // G maj
-    [261.63, 311.13, 392.0, 523.25],   // C maj7
-    [220.0,  261.63, 329.63, 440.0],   // A min7
-  ]
-
-  const playChord = useCallback((freqs: number[]) => {
-    const ctx = ctxRef.current
-    if (!ctx || !playingRef.current) return
-    freqs.forEach((freq, i) => {
-      setTimeout(() => {
-        if (!playingRef.current || !ctx) return
-        const osc  = ctx.createOscillator()
-        const gain = ctx.createGain()
-        const filt = ctx.createBiquadFilter()
-        filt.type = 'lowpass'
-        filt.frequency.value = 1800
-        osc.type = 'triangle'
-        osc.frequency.value = freq
-        gain.gain.setValueAtTime(0.001, ctx.currentTime)
-        gain.gain.exponentialRampToValueAtTime(0.055, ctx.currentTime + 0.08)
-        gain.gain.exponentialRampToValueAtTime(0.022, ctx.currentTime + 1.2)
-        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 3.2)
-        osc.connect(filt)
-        filt.connect(gain)
-        gain.connect(ctx.destination)
-        osc.start(ctx.currentTime)
-        osc.stop(ctx.currentTime + 3.4)
-      }, i * 150)
-    })
-  }, [])
-
-  const loop = useCallback((step = 0) => {
-    if (!playingRef.current) return
-    playChord(CHORDS[step % CHORDS.length])
-    timerRef.current = setTimeout(() => loop(step + 1), 3500)
-  }, [playChord])
-
-  const startAmbiance = useCallback(() => {
-    if (playingRef.current) return
-    if (!ctxRef.current) {
-      const Ctx = window.AudioContext || (window as any).webkitAudioContext
-      ctxRef.current = new Ctx()
-    }
-    if (ctxRef.current.state === 'suspended') ctxRef.current.resume()
-    playingRef.current = true
-    setPlaying(true)
-    loop(0)
-  }, [loop])
-
-  const toggleAmbiance = useCallback(() => {
-    if (playing) {
-      playingRef.current = false
-      setPlaying(false)
-      if (timerRef.current) clearTimeout(timerRef.current)
-    } else {
-      startAmbiance()
-    }
-  }, [playing, startAmbiance])
-
-  useEffect(() => {
-    return () => {
-      playingRef.current = false
-      if (timerRef.current) clearTimeout(timerRef.current)
-    }
-  }, [])
-
-  return { playing, startAmbiance, toggleAmbiance }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
    ORCHESTRATEUR PRINCIPAL
    ═══════════════════════════════════════════════════════════════════════════ */
 function WeddingApp() {
   const [phase, setPhase] = useState<'closed' | 'opening' | 'open'>('closed')
+  const [isAutoScrolling, setIsAutoScrolling] = useState(false)
   const invitationRef = useRef<HTMLDivElement>(null)
-  const { playing, startAmbiance, toggleAmbiance } = useAmbiance()
+  const autoScrollRafRef = useRef<number | null>(null)
+
+  // Gestion du défilement automatique doux et majestueux
+  const stopAutoScroll = useCallback(() => {
+    if (autoScrollRafRef.current) {
+      cancelAnimationFrame(autoScrollRafRef.current)
+      autoScrollRafRef.current = null
+    }
+    setIsAutoScrolling(false)
+  }, [])
+
+  const startAutoScroll = useCallback(() => {
+    if (autoScrollRafRef.current) {
+      cancelAnimationFrame(autoScrollRafRef.current)
+    }
+    setIsAutoScrolling(true)
+
+    const scrollStep = () => {
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight
+      if (window.scrollY >= maxScroll - 2) {
+        setIsAutoScrolling(false)
+        autoScrollRafRef.current = null
+        return
+      }
+      window.scrollBy({ top: 1.1, behavior: 'auto' })
+      autoScrollRafRef.current = requestAnimationFrame(scrollStep)
+    }
+
+    autoScrollRafRef.current = requestAnimationFrame(scrollStep)
+  }, [])
+
+  // Si l'utilisateur scrolle manuellement (molette, touch), on interrompt le défilement automatique
+  useEffect(() => {
+    const handleUserInteraction = (e: Event) => {
+      // Si l'événement n'est pas déclenché par le défilement auto
+      if (e.isTrusted && isAutoScrolling) {
+        stopAutoScroll()
+      }
+    }
+    window.addEventListener('wheel', handleUserInteraction, { passive: true })
+    window.addEventListener('touchmove', handleUserInteraction, { passive: true })
+    return () => {
+      window.removeEventListener('wheel', handleUserInteraction)
+      window.removeEventListener('touchmove', handleUserInteraction)
+      if (autoScrollRafRef.current) cancelAnimationFrame(autoScrollRafRef.current)
+    }
+  }, [isAutoScrolling, stopAutoScroll])
 
   const handleEnvelopeClick = () => {
     if (phase !== 'closed') return
     setPhase('opening')
-
-    /* Lance la musique dès le premier geste */
-    startAmbiance()
 
     /* Confettis dorés */
     try {
@@ -153,10 +116,14 @@ function WeddingApp() {
     /* Transition → invitation avec défilement automatique */
     setTimeout(() => {
       setPhase('open')
-      /* Défile vers l'invitation après son apparition */
+      /* Défile d'abord doucement vers l'invitation */
       setTimeout(() => {
         invitationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 200)
+        // Démarrage du défilement automatique continu après l'arrivée sur l'invitation
+        setTimeout(() => {
+          startAutoScroll()
+        }, 1200)
+      }, 250)
     }, 1600)
   }
 
@@ -187,26 +154,27 @@ function WeddingApp() {
         </div>
       )}
 
-      {/* ── Bouton musique flottant ── */}
+      {/* ── Contrôle flottant du défilement automatique ── */}
       {phase === 'open' && (
         <button
-          onClick={toggleAmbiance}
+          onClick={isAutoScrolling ? stopAutoScroll : startAutoScroll}
           className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full border px-4 py-2.5 font-serif text-xs uppercase tracking-wider shadow-2xl backdrop-blur transition-all duration-300"
           style={{
-            background: playing ? '#b68d40' : 'rgba(255,250,244,0.92)',
-            border: `1px solid ${playing ? '#b68d40' : 'rgba(182,141,64,0.45)'}`,
-            color: playing ? '#fff' : '#231f20',
-            boxShadow: playing
+            background: isAutoScrolling ? '#b68d40' : 'rgba(255,250,244,0.92)',
+            border: `1px solid ${isAutoScrolling ? '#b68d40' : 'rgba(182,141,64,0.45)'}`,
+            color: isAutoScrolling ? '#fff' : '#231f20',
+            boxShadow: isAutoScrolling
               ? '0 0 0 4px rgba(182,141,64,0.22), 0 8px 24px rgba(0,0,0,0.15)'
               : '0 8px 24px rgba(0,0,0,0.1)',
           }}
+          title={isAutoScrolling ? 'Mettre en pause le défilement' : 'Activer le défilement automatique'}
         >
-          {playing ? (
-            <Volume2 className="h-4 w-4" style={{ animation: 'pulse 1.5s infinite' }} />
+          {isAutoScrolling ? (
+            <Pause className="h-4 w-4" />
           ) : (
-            <VolumeX className="h-4 w-4" />
+            <Play className="h-4 w-4 fill-current" />
           )}
-          <span>{playing ? 'Musique active' : 'Musique'}</span>
+          <span>{isAutoScrolling ? 'Défilement actif' : 'Lecture auto'}</span>
         </button>
       )}
 
@@ -214,10 +182,6 @@ function WeddingApp() {
         @keyframes riseInvitation {
           from { opacity: 0; transform: translateY(40px) scale(0.98); }
           to   { opacity: 1; transform: translateY(0)    scale(1);    }
-        }
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50%       { transform: scale(1.2); }
         }
       `}</style>
     </div>
@@ -881,10 +845,28 @@ function ReceptionSection() {
           }}
         />
 
+        {/* Mariage Civil (au-dessus de l'église) */}
+        <TimelineCard
+          time="11h00"
+          dateBadge="Jeudi 24 Décembre"
+          step={1}
+          icon={<TownHallIcon className="h-7 w-7 text-[#231f20]" />}
+          title="Mariage Civil"
+          place="Avenue Roussel N° 7, Plateau Karavia"
+          landmark="Réf. Kin Marché"
+          themeBadge="Thème : Fluo Tropicale"
+          themeImage="/theme-civil-fluo-tropicale.jpg"
+          note="Célébration de l'union civile"
+          mapsUrl="https://maps.google.com/?q=Avenue+Roussel+Lubumbashi"
+          cardStyle={cardStyle}
+          accentColor="#b68d40"
+        />
+
         {/* Cérémonie */}
         <TimelineCard
           time="15h00"
-          step={1}
+          dateBadge="Samedi 26 Décembre"
+          step={2}
           icon={<ChurchIcon className="h-7 w-7 text-[#231f20]" />}
           title="Cérémonie à l'église"
           place="Église Paroisse Saint Laurent"
@@ -897,7 +879,8 @@ function ReceptionSection() {
         {/* Réception */}
         <TimelineCard
           time="19h30"
-          step={2}
+          dateBadge="Samedi 26 Décembre"
+          step={3}
           icon={<WeddingCakeIcon className="h-7 w-7 text-[#231f20]" />}
           title="Dîner & Soirée dansante"
           place="20 Avenue LOFOI"
@@ -910,28 +893,23 @@ function ReceptionSection() {
 
       {/* Dress code + Contacts */}
       <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <div className="rounded-2xl p-6 shadow-lg" style={cardStyle}>
-          <p
-            className="font-serif uppercase font-bold text-[#a65b32] mb-2"
-            style={{ fontSize: '0.65rem', letterSpacing: '0.28em' }}
-          >
-            Tenue souhaitée
-          </p>
-          <p className="font-serif text-lg text-[#231f20] mb-4">Élégance &amp; Tons Doux</p>
-          <div className="flex gap-2 mb-4">
-            {['#a65b32', '#d4af37', '#b88350', '#f5edd6'].map((c) => (
-              <div
-                key={c}
-                className="flex-1 rounded-lg shadow-inner"
-                style={{ height: 32, background: c, border: '1px solid rgba(0,0,0,0.08)' }}
-              />
-            ))}
+        <div className="rounded-2xl p-6 shadow-lg flex flex-col justify-between" style={cardStyle}>
+          <div>
+            <p
+              className="font-serif uppercase font-bold text-[#a65b32] mb-2"
+              style={{ fontSize: '0.65rem', letterSpacing: '0.28em' }}
+            >
+              Tenue souhaitée
+            </p>
+            <p className="font-serif text-xl sm:text-2xl font-medium text-[#231f20] leading-snug">
+              Chic et élégant en tenue de soirée
+            </p>
           </div>
-          <p className="text-xs text-[#5e5953] font-serif leading-relaxed">
-            Terracotta · Sable Doré · Ocre · Ivoire
-            <br />
-            <em className="text-[#a65b32]">Le blanc pur est réservé à la mariée.</em>
-          </p>
+          <div className="mt-6 pt-4 border-t border-[#b68d40]/15">
+            <p className="text-xs text-[#5e5953] font-serif italic">
+              « Une élégance raffinée pour sublimer ensemble cette célébration inoubliable. »
+            </p>
+          </div>
         </div>
 
         <div className="rounded-2xl p-6 shadow-lg" style={cardStyle}>
@@ -987,11 +965,13 @@ function ReceptionSection() {
 }
 
 function TimelineCard({
-  time, step, icon, title, place, note, mapsUrl, cardStyle, accentColor,
+  time, dateBadge, step, icon, title, place, landmark, themeBadge, themeImage, note, mapsUrl, cardStyle, accentColor,
 }: {
-  time: string; step: number; icon: React.ReactNode; title: string
-  place: string; note: string; mapsUrl: string; cardStyle: React.CSSProperties; accentColor: string
+  time: string; dateBadge?: string; step: number; icon: React.ReactNode; title: string
+  place: string; landmark?: string; themeBadge?: string; themeImage?: string; note: string; mapsUrl: string; cardStyle: React.CSSProperties; accentColor: string
 }) {
+  const [showThemeModal, setShowThemeModal] = useState(false)
+
   return (
     <div className="relative pl-16 group">
       <div
@@ -1007,12 +987,21 @@ function TimelineCard({
         className="rounded-2xl p-6 shadow-lg transition-transform duration-300 group-hover:-translate-y-1"
         style={cardStyle}
       >
-        <span
-          className="font-serif uppercase font-bold text-[#a65b32]"
-          style={{ fontSize: '0.65rem', letterSpacing: '0.28em' }}
-        >
-          {time} • Étape {step}
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          {dateBadge && (
+            <span
+              className="inline-block rounded-full bg-[#b68d40]/15 px-2.5 py-0.5 font-serif text-[10px] font-bold uppercase tracking-wider text-[#a65b32]"
+            >
+              {dateBadge}
+            </span>
+          )}
+          <span
+            className="font-serif uppercase font-bold text-[#a65b32]"
+            style={{ fontSize: '0.65rem', letterSpacing: '0.28em' }}
+          >
+            {time} • Étape {step}
+          </span>
+        </div>
         <h3
           className="mt-1 font-serif text-[#231f20]"
           style={{ fontSize: 'clamp(1.15rem,3vw,1.5rem)' }}
@@ -1020,7 +1009,78 @@ function TimelineCard({
           {title}
         </h3>
         <p className="mt-2 font-serif text-sm font-semibold text-[#231f20]">{place}</p>
-        <p className="mt-1 flex items-center gap-1.5 text-xs text-[#5e5953]">
+        {landmark && (
+          <p className="mt-0.5 font-serif text-xs font-medium text-[#a65b32]">
+            {landmark}
+          </p>
+        )}
+
+        {/* Badge Thème si présent (ex: Thème Fluo Tropicale pour le civil) */}
+        {themeBadge && (
+          <div className="mt-3 rounded-xl border border-[#b68d40]/25 bg-white/80 p-3 shadow-sm">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-[#a65b32]" />
+                <span className="font-serif text-xs font-bold text-[#231f20] uppercase tracking-wide">
+                  {themeBadge}
+                </span>
+              </div>
+              {themeImage && (
+                <button
+                  type="button"
+                  onClick={() => setShowThemeModal(true)}
+                  className="rounded-full bg-[#a65b32]/10 px-2.5 py-1 font-serif text-[11px] font-semibold text-[#a65b32] hover:bg-[#a65b32] hover:text-white transition"
+                >
+                  Voir la palette ✦
+                </button>
+              )}
+            </div>
+            {themeImage && (
+              <div
+                onClick={() => setShowThemeModal(true)}
+                className="mt-2 cursor-pointer overflow-hidden rounded-lg border border-[#b68d40]/20 transition hover:opacity-95"
+              >
+                <img
+                  src={themeImage}
+                  alt="Palette de couleurs - Thème Fluo Tropicale"
+                  className="h-28 w-full object-cover object-top"
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Modal pour afficher la palette en grand */}
+        {showThemeModal && themeImage && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+            onClick={() => setShowThemeModal(false)}
+          >
+            <div
+              className="relative max-h-[90vh] max-w-md overflow-auto rounded-2xl bg-white p-4 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-[#b68d40]/20">
+                <h4 className="font-serif text-base font-bold text-[#231f20]">
+                  {themeBadge} — Palette de Couleurs
+                </h4>
+                <button
+                  onClick={() => setShowThemeModal(false)}
+                  className="h-8 w-8 rounded-full bg-black/5 text-[#231f20] hover:bg-black/10 font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+              <img
+                src={themeImage}
+                alt="Thème Mariage Civil - Fluo Tropicale"
+                className="mt-3 w-full rounded-xl shadow-md"
+              />
+            </div>
+          </div>
+        )}
+
+        <p className="mt-2 flex items-center gap-1.5 text-xs text-[#5e5953]">
           <MapPin className="h-3.5 w-3.5 text-[#a65b32]" />
           Lubumbashi, RDC
         </p>
@@ -1053,7 +1113,7 @@ function RsvpSection() {
   const [name, setName]           = useState('')
   const [phone, setPhone]         = useState('')
   const [attending, setAttending] = useState<'yes' | 'no'>('yes')
-  const [events, setEvents]       = useState({ ceremony: true, dinner: true })
+  const [events, setEvents]       = useState({ civil: true, ceremony: true, dinner: true })
   const [guests, setGuests]       = useState(1)
   const [guestNames, setGuestNames] = useState('')
   const [msg, setMsg]             = useState('')
@@ -1069,12 +1129,16 @@ function RsvpSection() {
   }
 
   const buildWA = () => {
-    let t = `*RSVP Mariage Sifa & Rony (26.12.2026)*\n\n`
+    let t = `*RSVP Mariage Sifa & Rony*\n\n`
     t += `👤 *Nom :* ${name}\n📱 *Tél :* ${phone}\n`
     t += `💌 *Réponse :* ${attending === 'yes' ? '✅ Présent(e) avec joie !' : '❌ Absent(e) avec regrets'}\n`
     if (attending === 'yes') {
       t += `👥 *Invités :* ${guests} personne(s)${guestNames ? ` (${guestNames})` : ''}\n`
-      const ev = [events.ceremony && 'Cérémonie 15h00', events.dinner && 'Soirée 19h30'].filter(Boolean).join(' + ')
+      const ev = [
+        events.civil && 'Mariage civil 24/12 (11h00)',
+        events.ceremony && 'Cérémonie église 26/12 (15h00)',
+        events.dinner && 'Soirée 26/12 (19h30)',
+      ].filter(Boolean).join(' + ')
       t += `📍 *Étapes :* ${ev}\n`
     }
     if (msg) t += `💬 *Message :* "${msg}"\n`
@@ -1204,8 +1268,9 @@ function RsvpSection() {
                 <RField label="Présence aux étapes :">
                   <div className="space-y-2">
                     {[
-                      { key: 'ceremony', label: "15h00 — Cérémonie à l'Église Paroisse Saint Laurent" },
-                      { key: 'dinner',   label: '19h30 — Dîner & Soirée au 20 avenue LOFOI' },
+                      { key: 'civil',    label: 'Jeudi 24 Déc. 11h00 — Mariage Civil (Av. Roussel N° 7, Plateau Karavia)' },
+                      { key: 'ceremony', label: "Samedi 26 Déc. 15h00 — Cérémonie à l'Église Paroisse Saint Laurent" },
+                      { key: 'dinner',   label: 'Samedi 26 Déc. 19h30 — Dîner & Soirée au 20 avenue LOFOI' },
                     ].map(({ key, label }) => (
                       <label key={key} className="flex items-center gap-3 cursor-pointer">
                         <input type="checkbox"

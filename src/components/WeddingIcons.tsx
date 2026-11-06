@@ -184,6 +184,33 @@ export function DriedFlowerBotanical({ className = 'w-full h-auto' }: { classNam
   )
 }
 
+export function TownHallIcon({ className = 'w-24 h-24' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      {/* Fronton triangulaire classique */}
+      <polygon points="50,16 18,36 82,36" fill="rgba(182,141,64,0.08)" />
+      {/* Petit horloge / médaillon du fronton */}
+      <circle cx="50" cy="27" r="4" />
+      <line x1="50" y1="25" x2="50" y2="27" />
+      <line x1="50" y1="27" x2="52" y2="27" />
+      {/* Entablement */}
+      <rect x="20" y="36" width="60" height="5" />
+      {/* 4 Colonnes classiques */}
+      <line x1="28" y1="41" x2="28" y2="78" strokeWidth="2.2" />
+      <line x1="42" y1="41" x2="42" y2="78" strokeWidth="2.2" />
+      <line x1="58" y1="41" x2="58" y2="78" strokeWidth="2.2" />
+      <line x1="72" y1="41" x2="72" y2="78" strokeWidth="2.2" />
+      {/* Porte cintrée */}
+      <path d="M45 78 L45 56 C45 52, 55 52, 55 56 L55 78" />
+      {/* Marches d'escalier */}
+      <rect x="16" y="78" width="68" height="5" />
+      <rect x="12" y="83" width="76" height="5" />
+      {/* Ligne de sol */}
+      <line x1="6" y1="88" x2="94" y2="88" strokeWidth="2" />
+    </svg>
+  )
+}
+
 export function WaxSealStamp({ initials = 'S & R', className = 'w-16 h-16' }: { initials?: string; className?: string }) {
   return (
     <div className={`relative flex items-center justify-center rounded-full bg-gradient-to-br from-[#802020] via-[#9e2a2b] to-[#5a1314] text-[#fbeee0] shadow-xl border border-[#b34040]/40 ${className}`}>
