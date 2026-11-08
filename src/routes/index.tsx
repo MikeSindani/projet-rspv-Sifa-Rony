@@ -921,7 +921,6 @@ function ReceptionSection() {
           </p>
           {[
             { label: 'Famille A TSHIKWAND', num: '0970519974', wa: '243970519974' },
-            { label: 'Famille KALINDA',     num: '0972747664', wa: '243972747664' },
           ].map((c) => (
             <div
               key={c.num}
@@ -1204,7 +1203,7 @@ function RsvpSection() {
             <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
               {[
                 { num: '243970519974', label: '0970 519 974' },
-                { num: '243972747664', label: '0972 747 664' },
+               
               ].map((c) => (
                 <a
                   key={c.num}
