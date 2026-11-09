@@ -852,12 +852,12 @@ function ReceptionSection() {
           step={1}
           icon={<TownHallIcon className="h-7 w-7 text-[#231f20]" />}
           title="Mariage Civil"
-          place="Avenue Roussel N° 7, Plateau Karavia"
-          landmark="Réf. Kin Marché"
+          place="N° 53, Avenue Lubilanshi, coin Okito"
+          landmark="Réf. : entre le Bâtiment du 30 juin et le Musée National de Lubumbashi"
           themeBadge="Thème : Fluo Tropicale"
           themeImage="/theme-civil-fluo-tropicale.jpg"
           note="Célébration de l'union civile"
-          mapsUrl="https://maps.google.com/?q=Avenue+Roussel+Lubumbashi"
+          mapsUrl="https://www.google.com/maps/search/?api=1&query=-11.650194,27.476944"
           cardStyle={cardStyle}
           accentColor="#b68d40"
         />
@@ -1267,7 +1267,7 @@ function RsvpSection() {
                 <RField label="Présence aux étapes :">
                   <div className="space-y-2">
                     {[
-                      { key: 'civil',    label: 'Jeudi 24 Déc. 11h00 — Mariage Civil (Av. Roussel N° 7, Plateau Karavia)' },
+                      { key: 'civil',    label: 'Jeudi 24 Déc. 11h00 — Mariage Civil (N° 53, Avenue Lubilanshi, coin Okito)' },
                       { key: 'ceremony', label: "Samedi 26 Déc. 15h00 — Cérémonie à l'Église Paroisse Saint Laurent" },
                       { key: 'dinner',   label: 'Samedi 26 Déc. 19h30 — Dîner & Soirée au 20 avenue LOFOI' },
                     ].map(({ key, label }) => (
